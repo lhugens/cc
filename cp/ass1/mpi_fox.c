@@ -1,89 +1,76 @@
-#include<mpi.h>
-#include<stdio.h>
-#include<stdlib.h>
-#include<math.h>
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 
-#define ROOT 0
-
-void special_vector_multiply(int s, int x[], int y[], int partial[]){
-    int i, j;
-    for (i=0; i<s; i++){
-        partial[i] = x[i] * y[i];
+int special_vector_mult(int n, int x[], int i, int y[], int j){
+    int c;
+    if(i == j){
+        return 0;
     }
+    for (int k=0; k<n; k++){
+        if((x[k] == 0 && k != i) || (y[k] == 0 && k != j)){
+                continue;
+        } 
+        else{
+            c = fmin(c, x[k]+y[k]);
+        } 
+    }
+    return c;
 }
 
-int* all_pais_shortest_paths(){}
-
 int main(int argc, char *argv[]){
-    int i, j, my_rank, N, P, Q, S, *mat, *row, *col, *c;
-
-    row[0] = 0;
-    row[1] = 2;
-    row[2] = 0;
-
-    col[0] = 2;
-    col[1] = 0;
-    col[2] = 2;
-
-    double start, finish;
+    int P, my_rank;
+    int N, Q, S;
+    int i, j, *row, *col, *c, *mat, sp;
 
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &P);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
-    MPI_Barrier(MPI_COMM_WORLD);
-    start = MPI_Wtime();
+    scanf("%d", &N);
 
-    if (my_rank == ROOT){
-        double infinity = INFINITY;
-        double x = 5.0;
-        double min = fmin(x, infinity);
-        printf("min=%f\n", min);
+    double Q_candidate = sqrt(P);
+    Q = (int)Q_candidate;
 
-        scanf("%d", &N);
-        printf("N=%d\n", N);
+    if(Q_candidate != Q || N % Q != 0){
+        printf("The Fox algorithm cannot be applied to this matrix size and number of processes.\n");
+        return 1;
+    } 
 
+    S = N / Q;
 
+    mat = (int *) malloc(N * N * sizeof(int));
+    for (i = 0; i < N; i++)
+        for (j = 0; j < N; j++)
+            scanf("%d", &mat[i * N + j]);
 
-        // P, Q difinition
-        printf("P=%d\n", P);
+    c = (int *) malloc(N * N * sizeof(int));
+    row = (int *) malloc(3 * sizeof(int));
+    col = (int *) malloc(3 * sizeof(int));
 
-        double Q_candidate = sqrt(P);
-        Q = (int)Q_candidate;
-
-        if(Q_candidate != Q || N % Q != 0){
-            printf("The Fox algorithm cannot be applied to this matrix size and number of processes.\n");
-            return 1;
-        } 
-        printf("Q=%d\n", Q);
-
-        S = N / Q;
-        ///////////////////
-        
-        special_vector_multiply(S, row, col, c);
-        for (int i=0; i<S; i++)
-            printf("%d ", c[i]);
-        printf("\n");
-
-        mat = (int *) malloc(N * N * sizeof(int));
-
-        for (i = 0; i < N; i++)
-            for (j = 0; j < N; j++)
-                scanf("%d", &mat[i * N + j]);
-
+    for(int s=0; s<N; s++){
         for (i = 0; i < N; i++){
-            for (j = 0; j < N; j++)
-                printf("%d ", mat[i * N + j]);
-            printf("\n");
+            for (j = 0; j < N; j++){
+                row[j] = mat[i * N + j];
+                col[j] = mat[j * N + i];
+            }
+            for (j = 0; j < N; j++){
+                c[i * N + j] = special_vector_mult(N, row, i, col, j);
+            }
         }
-
-        double cpu_time;
-
+        mat = c;
     }
-    MPI_Barrier(MPI_COMM_WORLD);
-    finish = MPI_Wtime();
-    if(my_rank==ROOT){
-        printf("CPU Time: %f seconds.\n", finish-start);
+
+    //row[0] = 0; row[1] = 5; row[2] = 0; row[3] = 0; col[0] = 0; col[1] = 1; col[2] = 0; col[3] = 0;
+    //sp = special_vector_mult(3, row, 0, col, 2);
+    //
+    for (i = 0; i < N; i++){
+        for (j = 0; j < N; j++){
+            printf("%d ", c[i * N + j]);
+            //printf("%d ", mat[i * N + j]);
+        }
+        printf("\n");
     }
 
 
