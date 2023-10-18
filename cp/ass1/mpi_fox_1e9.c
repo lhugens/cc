@@ -4,19 +4,17 @@
 #include <math.h>
 
 #define min(a, b) a < b ? a : b
+#define inf 1e9
 
-int special_vector_mult(int n, int x[], int y[]){
-    int c = -1;
+int special_vector_mult(int n, int x[], int i, int y[], int j){
+    if(i == j){
+        return 0;
+    }
+    double c = inf;
     for(int k=0; k<n; k++){
-        //printf("x[k]=%d, y[k]=%d\n", x[k], y[k]);
-        if(x[k]!=-1 && y[k]!=-1){
-            if(c != -1){
-                c = min(c, x[k]+y[k]);
-            } else {
-                c = x[k]+y[k];
-            }
-        }
-        //printf("c=%d\n", c);
+        //printf("x[k]+y[k]=%lf\n", x[k]+y[k]);
+        c = min(c, x[k]+y[k]);
+        //printf("c=%lf\n", c);
     }
     return c;
 }
@@ -50,7 +48,7 @@ int main(int argc, char *argv[]){
     for (i = 0; i < N; i++){
         for (j = 0; j < N; j++){
             if(i!=j && mat[i*N+j]==0){
-                mat[i*N+j] = -1;
+                mat[i*N+j] = inf;
             }
         }
     }
@@ -59,47 +57,34 @@ int main(int argc, char *argv[]){
     row = (int *) malloc(3 * sizeof(int));
     col = (int *) malloc(3 * sizeof(int));
 
-    int m = 1;
-    while(m<N-1){
-        for(i=0; i<N; i++){
-            //printf("row %d\n", i);
-            for(j=0; j<N; j++){
-                row[j] = mat[i * N + j];
-                //printf("%d ", row[j]);
+    for(i=0; i<N; i++){
+        //printf("row %d\n", i);
+        for(j=0; j<N; j++){
+            row[j] = mat[i * N + j];
+            //printf("%d ", row[j]);
+        }
+        //printf("\n");
+        for(int jp=0; jp<N; jp++){
+            //printf("col %d\n", jp);
+            for(int k=0; k<N; k++){
+                col[k] = mat[k * N + jp];
+                //printf("%d ", col[k]);
             }
             //printf("\n");
-            for(int jp=0; jp<N; jp++){
-                //printf("col %d\n", jp);
-                for(int k=0; k<N; k++){
-                    col[k] = mat[k * N + jp];
-                    //printf("%d ", col[k]);
-                }
-                //printf("\n");
-                C[i * N + jp] = special_vector_mult(N, row, col);
-                //printf("result\n");
-                //printf("c = %d\n", C[i*N+jp]);
-            }
+            C[i * N + jp] = special_vector_mult(N, row, i, col, jp);
+            //printf("result\n");
+            //printf("c = %d\n", C[i*N+jp]);
         }
-        mat=C;
-        //for(i=0; i<N; i++){
-        //    for(j=0; j<N; j++){
-        //        printf("%d ", mat[i*N+j]);
-        //    }
-        //    printf("\n");
-        //}
-        m = m*2;
     }
 
     for (i = 0; i < N; i++){
         for (j = 0; j < N; j++){
-            if(C[i * N + j]==-1){
+            if(C[i * N + j]==inf){
                 printf("%d ", 0);
             } else {
                 printf("%d ", C[i * N + j]);
                 //printf("%d ", mat[i * N + j]);
             }
-            //printf("%d ", C[i * N + j]);
-            //printf("%d ", mat[i * N + j]);
         }
         printf("\n");
     }
@@ -109,3 +94,18 @@ int main(int argc, char *argv[]){
 
     return 0;
 }
+
+//int special_vector_mult(int n, int x[], int i, int y[], int j){
+//    int c;
+//        return 0;
+//    }
+//    for (int k=0; k<n; k++){
+//        if((x[k] == 0 && k != i) || (y[k] == 0 && k != j)){
+//                continue;
+//        } 
+//        else{
+//            c = fmin(c, x[k]+y[k]);
+//        } 
+//    }
+//    return c;
+//}
