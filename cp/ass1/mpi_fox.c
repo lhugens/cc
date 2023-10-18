@@ -12,9 +12,9 @@ int special_vector_mult(int n, int x[], int i, int y[], int j){
     }
     double c = inf;
     for(int k=0; k<n; k++){
-        printf("x[k]+y[k]=%lf\n", x[k]+y[k]);
+        //printf("x[k]+y[k]=%lf\n", x[k]+y[k]);
         c = fmin(c, x[k]+y[k]);
-        printf("c=%lf\n", c);
+        //printf("c=%lf\n", c);
     }
     return c;
 }
@@ -40,7 +40,7 @@ int main(int argc, char *argv[]){
 
     S = N / Q;
 
-    mat = (double *) malloc(N * N * sizeof(int));
+    mat = (int *) malloc(N * N * sizeof(int));
     for (i = 0; i < N; i++)
         for (j = 0; j < N; j++)
             scanf("%d", &mat[i * N + j]);
@@ -53,34 +53,38 @@ int main(int argc, char *argv[]){
         }
     }
 
-    C = (double *) malloc(N * N * sizeof(int));
-    row = (double *) malloc(3 * sizeof(int));
-    col = (double *) malloc(3 * sizeof(int));
+    C = (int *) malloc(N * N * sizeof(int));
+    row = (int *) malloc(3 * sizeof(int));
+    col = (int *) malloc(3 * sizeof(int));
 
     for(i=0; i<N; i++){
-        printf("row %d\n", i);
+        //printf("row %d\n", i);
         for(j=0; j<N; j++){
             row[j] = mat[i * N + j];
-            printf("%d ", row[j]);
+            //printf("%d ", row[j]);
         }
-        printf("\n");
+        //printf("\n");
         for(int jp=0; jp<N; jp++){
-            printf("col %d\n", jp);
+            //printf("col %d\n", jp);
             for(int k=0; k<N; k++){
                 col[k] = mat[k * N + jp];
-                printf("%d ", col[k]);
+                //printf("%d ", col[k]);
             }
-            printf("\n");
+            //printf("\n");
             C[i * N + jp] = special_vector_mult(N, row, i, col, jp);
-            printf("result\n");
-            printf("c = %d\n", C[i*N+jp]);
+            //printf("result\n");
+            //printf("c = %d\n", C[i*N+jp]);
         }
     }
 
     for (i = 0; i < N; i++){
         for (j = 0; j < N; j++){
-            printf("%d ", C[i * N + j]);
-            //printf("%d ", mat[i * N + j]);
+            if(C[i * N + j]==inf){
+                printf("%d ", 0);
+            } else {
+                printf("%d ", C[i * N + j]);
+                //printf("%d ", mat[i * N + j]);
+            }
         }
         printf("\n");
     }
