@@ -8,7 +8,6 @@
 int special_vector_mult(int n, int x[], int y[]){
     int c = -1;
     for(int k=0; k<n; k++){
-        //printf("x[k]=%d, y[k]=%d\n", x[k], y[k]);
         if(x[k]!=-1 && y[k]!=-1){
             if(c != -1){
                 c = min(c, x[k]+y[k]);
@@ -16,10 +15,28 @@ int special_vector_mult(int n, int x[], int y[]){
                 c = x[k]+y[k];
             }
         }
-        //printf("c=%d\n", c);
     }
     return c;
 }
+
+void squaring(int n, int* D){
+    int *c, *row, *col;
+    c = (int *) malloc(n * n * sizeof(int));
+    row = (int *) malloc(n * sizeof(int));
+    col = (int *) malloc(n * sizeof(int));
+    for(int i=0; i<n; i++){
+        for(int j=0; j<n; j++){
+            row[j] = D[i * n + j];
+        }
+        for(int jp=0; jp<n; jp++){
+            for(int k=0; k<n; k++){
+                col[k] = D[k * n + jp];
+            }
+            c[i * n + jp] = special_vector_mult(n, row, col);
+        }
+    }
+    D=c;
+} 
 
 int main(int argc, char *argv[]){
     int P, my_rank;
@@ -55,38 +72,26 @@ int main(int argc, char *argv[]){
         }
     }
 
+
+
     C = (int *) malloc(N * N * sizeof(int));
-    row = (int *) malloc(3 * sizeof(int));
-    col = (int *) malloc(3 * sizeof(int));
+    row = (int *) malloc(N * sizeof(int));
+    col = (int *) malloc(N * sizeof(int));
 
     int m = 1;
     while(m<N-1){
         for(i=0; i<N; i++){
-            //printf("row %d\n", i);
             for(j=0; j<N; j++){
                 row[j] = mat[i * N + j];
-                //printf("%d ", row[j]);
             }
-            //printf("\n");
             for(int jp=0; jp<N; jp++){
-                //printf("col %d\n", jp);
                 for(int k=0; k<N; k++){
                     col[k] = mat[k * N + jp];
-                    //printf("%d ", col[k]);
                 }
-                //printf("\n");
                 C[i * N + jp] = special_vector_mult(N, row, col);
-                //printf("result\n");
-                //printf("c = %d\n", C[i*N+jp]);
             }
         }
         mat=C;
-        //for(i=0; i<N; i++){
-        //    for(j=0; j<N; j++){
-        //        printf("%d ", mat[i*N+j]);
-        //    }
-        //    printf("\n");
-        //}
         m = m*2;
     }
 
@@ -96,10 +101,7 @@ int main(int argc, char *argv[]){
                 printf("%d ", 0);
             } else {
                 printf("%d ", C[i * N + j]);
-                //printf("%d ", mat[i * N + j]);
             }
-            //printf("%d ", C[i * N + j]);
-            //printf("%d ", mat[i * N + j]);
         }
         printf("\n");
     }
