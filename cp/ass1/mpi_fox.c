@@ -19,9 +19,9 @@ int special_vector_mult(int n, int x[], int y[]){
     return c;
 }
 
-void squaring(int n, int* D){
-    int *c, *row, *col;
-    c = (int *) malloc(n * n * sizeof(int));
+void special_matrix_mult(int n, int *D){
+    int *C, *row, *col;
+    C = (int *) malloc(n * n * sizeof(int));
     row = (int *) malloc(n * sizeof(int));
     col = (int *) malloc(n * sizeof(int));
     for(int i=0; i<n; i++){
@@ -32,10 +32,14 @@ void squaring(int n, int* D){
             for(int k=0; k<n; k++){
                 col[k] = D[k * n + jp];
             }
-            c[i * n + jp] = special_vector_mult(n, row, col);
+            C[i * n + jp] = special_vector_mult(n, row, col);
         }
     }
-    D=c;
+    for(int i=0; i<n; i++){
+        for(int j=0; j<n; j++){
+            D[i*n+j] = C[i*n+j];
+        }
+    }
 } 
 
 int main(int argc, char *argv[]){
@@ -72,40 +76,22 @@ int main(int argc, char *argv[]){
         }
     }
 
-
-
-    C = (int *) malloc(N * N * sizeof(int));
-    row = (int *) malloc(N * sizeof(int));
-    col = (int *) malloc(N * sizeof(int));
-
     int m = 1;
     while(m<N-1){
-        for(i=0; i<N; i++){
-            for(j=0; j<N; j++){
-                row[j] = mat[i * N + j];
-            }
-            for(int jp=0; jp<N; jp++){
-                for(int k=0; k<N; k++){
-                    col[k] = mat[k * N + jp];
-                }
-                C[i * N + jp] = special_vector_mult(N, row, col);
-            }
-        }
-        mat=C;
+        special_matrix_mult(N, mat);
         m = m*2;
     }
 
     for (i = 0; i < N; i++){
         for (j = 0; j < N; j++){
-            if(C[i * N + j]==-1){
+            if(mat[i * N + j]==-1){
                 printf("%d ", 0);
             } else {
-                printf("%d ", C[i * N + j]);
+                printf("%d ", mat[i * N + j]);
             }
         }
         printf("\n");
     }
-
 
     MPI_Finalize();
 
