@@ -82,6 +82,23 @@ int main(int argc, char *argv[]){
         m = m*2;
     }
 
+    // Fox's algorithm
+    //
+    // for(int step = 0; step<Q; step++){
+    //  1 -> choose a submatrix of A from each row of processes.
+    //
+    //  2 -> In each row of processes broadcast the submatrix chosen in that row to the other processes in that row.
+    //
+    //          MPI_Bcast(void *buf, int count, MPI_Datatype datatype, int root, MPI_Comm comm)
+    //
+    //  3 -> On each process, multiply the newly received submatrix of A by the submatrix of B currently residing on the process.
+    //
+    //  4 -> On each process, send the submatrix of B to the process directly above. (On processes in the first row, send the submatrix to the last row.)
+    //
+    //          MPI_Send(void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)
+    //
+    // }
+
     for (i = 0; i < N; i++){
         for (j = 0; j < N; j++){
             if(mat[i * N + j]==-1){
