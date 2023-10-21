@@ -5,6 +5,19 @@
 
 #define min(a, b) a < b ? a : b
 
+void print(int n, int *D){
+    for (int i = 0; i < n; i++){
+        for (int j = 0; j < n; j++){
+            if(D[i * n + j]==-1){
+                printf("%d ", 0);
+            } else {
+                printf("%d ", D[i * n + j]);
+            }
+        }
+        printf("\n");
+    }
+}
+
 int special_vector_mult(int n, int x[], int y[]){
     int c = -1;
     for(int k=0; k<n; k++){
@@ -40,6 +53,9 @@ void special_matrix_mult(int n, int *D){
             D[i*n+j] = C[i*n+j];
         }
     }
+    free(C);
+    free(row);
+    free(col);
 } 
 
 int main(int argc, char *argv[]){
@@ -76,15 +92,16 @@ int main(int argc, char *argv[]){
         }
     }
 
-    int m = 1;
-    while(m<N-1){
-        special_matrix_mult(N, mat);
-        m = m*2;
-    }
+    //int m = 1;
+    //while(m<N-1){
+    //    special_matrix_mult(N, mat);
+    //    m = m*2;
+    //}
 
     // Fox's algorithm
     //
     // for(int step = 0; step<Q; step++){
+    //
     //  1 -> choose a submatrix of A from each row of processes.
     //
     //  2 -> In each row of processes broadcast the submatrix chosen in that row to the other processes in that row.
@@ -99,16 +116,8 @@ int main(int argc, char *argv[]){
     //
     // }
 
-    for (i = 0; i < N; i++){
-        for (j = 0; j < N; j++){
-            if(mat[i * N + j]==-1){
-                printf("%d ", 0);
-            } else {
-                printf("%d ", mat[i * N + j]);
-            }
-        }
-        printf("\n");
-    }
+    print(N, mat);
+    free(mat);
 
     MPI_Finalize();
 
