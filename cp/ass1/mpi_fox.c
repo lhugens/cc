@@ -102,6 +102,7 @@ int main(int argc, char *argv[]){
     int *my_submatrix;
     my_submatrix = (int*) malloc(S*S*sizeof(int));
     MPI_Type_vector(S, S, S, MPI_INT, &submatrix);
+    MPI_Type_commit(&submatrix);
     MPI_Type_free(&submatrix);
     free(my_submatrix);
 
