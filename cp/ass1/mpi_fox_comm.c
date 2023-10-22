@@ -37,9 +37,9 @@ int main(int argc, char *argv[]){
         MPI_Bcast(A, 2, MPI_INT, 0, first_row_comm);
     }
 
-    if(my_rank_in_first_row == 1){
-
-    }
+//    if(my_rank_in_first_row == 1){
+//
+//    }
 
     MPI_Finalize();
 
