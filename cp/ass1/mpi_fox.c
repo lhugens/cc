@@ -67,57 +67,89 @@ int main(int argc, char *argv[]){
     MPI_Comm_size(MPI_COMM_WORLD, &P);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
-    scanf("%d", &N);
-
     double Q_candidate = sqrt(P);
     Q = (int)Q_candidate;
 
     if(Q_candidate != Q || N % Q != 0){
         printf("The Fox algorithm cannot be applied to this matrix size and number of processes.\n");
         return 1;
-    } 
-
+    }
     S = N / Q;
 
-    mat = (int *) malloc(N * N * sizeof(int));
-    for (i = 0; i < N; i++)
-        for (j = 0; j < N; j++)
-            scanf("%d", &mat[i * N + j]);
+    int dims[2], wrap_around[2];
+    dims[0] = dims[1] = Q;
+    wrap_around[0] = wrap_around[1] = 1;
 
-    for (i = 0; i < N; i++){
-        for (j = 0; j < N; j++){
-            if(i!=j && mat[i*N+j]==0){
-                mat[i*N+j] = -1;
+    MPI_Comm grid_comm;
+    MPI_Cart_create(MPI_COMM_WORLD, 2, dims, wrap_around, 1, &grid_comm);
+
+    int my_grid_rank;
+    MPI_Comm_rank(grid_comm, &my_grid_rank);
+
+    int varying_coords[2];
+
+    // create row communicators
+    MPI_Comm row_comm;
+    varying_coords[0] = 0; varying_coords[1] = 1;
+    MPI_Cart_sub(grid_comm, varying_coords, &row_comm);
+
+    // create column communicators
+    MPI_Comm col_comm;
+    varying_coords[0] = 1; varying_coords[1] = 0;
+    MPI_Cart_sub(grid_comm, varying_coords, &col_comm);
+
+    MPI_Datatype submatrix;
+    int *my_submatrix;
+    my_submatrix = (int*) malloc(S*S*sizeof(int));
+    MPI_Type_vector(S, S, S, MPI_INT, &submatrix);
+    MPI_Type_free(&submatrix);
+    free(my_submatrix);
+
+    if(my_rank == 0){
+
+        scanf("%d", &N);
+
+        mat = (int *) malloc(N * N * sizeof(int));
+        for (i = 0; i < N; i++)
+            for (j = 0; j < N; j++)
+                scanf("%d", &mat[i * N + j]);
+
+        for (i = 0; i < N; i++){
+            for (j = 0; j < N; j++){
+                if(i!=j && mat[i*N+j]==0){
+                    mat[i*N+j] = -1;
+                }
             }
         }
+
+        //int m = 1;
+        //while(m<N-1){
+        //    special_matrix_mult(N, mat);
+        //    m = m*2;
+        //}
+
+        // Fox's algorithm
+        //
+        // for(int step = 0; step<Q; step++){
+        //
+        //  1 -> choose a submatrix of A from each row of processes.
+        //
+        //  2 -> In each row of processes broadcast the submatrix chosen in that row to the other processes in that row.
+        //
+        //          MPI_Bcast(void *buf, int count, MPI_Datatype datatype, int root, MPI_Comm comm)
+        //
+        //  3 -> On each process, multiply the newly received submatrix of A by the submatrix of B currently residing on the process.
+        //
+        //  4 -> On each process, send the submatrix of B to the process directly above. (On processes in the first row, send the submatrix to the last row.)
+        //
+        //          MPI_Send(void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)
+        //
+        // }
+
+        print(N, mat);
+        free(mat);
+
     }
-
-    //int m = 1;
-    //while(m<N-1){
-    //    special_matrix_mult(N, mat);
-    //    m = m*2;
-    //}
-
-    // Fox's algorithm
-    //
-    // for(int step = 0; step<Q; step++){
-    //
-    //  1 -> choose a submatrix of A from each row of processes.
-    //
-    //  2 -> In each row of processes broadcast the submatrix chosen in that row to the other processes in that row.
-    //
-    //          MPI_Bcast(void *buf, int count, MPI_Datatype datatype, int root, MPI_Comm comm)
-    //
-    //  3 -> On each process, multiply the newly received submatrix of A by the submatrix of B currently residing on the process.
-    //
-    //  4 -> On each process, send the submatrix of B to the process directly above. (On processes in the first row, send the submatrix to the last row.)
-    //
-    //          MPI_Send(void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)
-    //
-    // }
-
-    print(N, mat);
-    free(mat);
 
     MPI_Finalize();
 
