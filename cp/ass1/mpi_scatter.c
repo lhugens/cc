@@ -98,7 +98,7 @@ int main(int argc, char *argv[]){
         printf("Submatrix, Process %d\n", my_rank);
         print_submatrix(3, submatrix);
     
-        MPI_Bcast(submatrix, 3*3, MPI_INT, 0, row_comm);
+        //MPI_Bcast(submatrix, 3*3, MPI_INT, 0, row_comm);
     }
 
     if(my_rank==2){
