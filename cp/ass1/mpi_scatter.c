@@ -6,26 +6,6 @@
 #define ROOT 0
 #define M 6
 
-void print_submatrix(int s, int *sub){
-    for(int i=0; i<s; i++){
-        for(int j=0; j<s; j++){
-            printf("%d ", sub[i*s+j]);
-        }
-        printf("\n");
-    }
-
-}
-
-void create_submatrix(int ia, int ja, int n, int *D, int s, int *sub){
-    for(int i = ia; i < (s + ia); i++){
-        for(int j = ja; j < (s + ja); j++){
-            sub[(i - ia) * s + (j - ja)] = D[i * n + j];
-            //printf("sub[%d*%d+%d]=%d\n", (i - ia), s, (j - ja), sub[(i - ia) * s + (j - ja)]);
-            printf("D[%d*%d+%d]=%d\n", i, n, j, D[i * n + j]);
-        }
-    }
-}
-
 int main(int argc, char *argv[]){
     int P, my_rank;
     MPI_Init(&argc, &argv);
@@ -47,15 +27,12 @@ int main(int argc, char *argv[]){
 
     S = N / Q;
 
-    int *mat;
-    mat = (int *) malloc(N * N * sizeof(int));
+    int *mat = (int *) malloc(N * N * sizeof(int));
 
     for (int i = 0; i < N; i++)
         for (int j = 0; j < N; j++)
             scanf("%d", &mat[i*N+j]);
 
-    printf("mat[%d*%d+%d]=%d\n", 3, 6, 1, mat[3*6+1]);
-    
     //for (int i = 0; i < N; i++){
     //    for (int j = 0; j < N; j++){
     //        printf("%d ", mat[i][j]);
@@ -63,6 +40,17 @@ int main(int argc, char *argv[]){
     //    printf("\n");
     //}
     //printf("\n");
+
+    if(my_rank==ROOT){
+        printf("Process %d, Matrix mat \n", ROOT);
+        for(int i=0; i<N; i++){
+            for(int j=0; j<N; j++){
+                printf("%d ", mat[i*N+j]);
+            }
+            printf("\n");
+        }
+        printf("\n");
+    }
     
     int n = 3; // Size of the matrix
     int blocklen = 1; // Number of elements in each block
@@ -87,38 +75,34 @@ int main(int argc, char *argv[]){
     MPI_Comm col_comm;
     varying_coords[0] = 1; varying_coords[1] = 0;
     MPI_Cart_sub(grid_comm, varying_coords, &col_comm);
-    
+
     MPI_Datatype matrix_type;
     MPI_Type_vector(n, n*blocklen, stride, MPI_INT, &matrix_type);
     MPI_Type_commit(&matrix_type);
 
+    int* sub = (int*) malloc(S*S*sizeof(int));
 
-    if(my_rank==0){
-        int *submatrix0;
-        submatrix0= (int*) malloc(3*3*sizeof(int));
-
-        printf("Matirx\n");
-        print_submatrix(N, mat);
-
-        // Bcast the 00 submatrix
-        create_submatrix(0, 0, 6, mat, 3, submatrix0);
-    
-        printf("Submatrix, Process %d\n", my_rank);
-        print_submatrix(3, submatrix0);
-    
-        //MPI_Bcast(submatrix, 3*3, MPI_INT, 0, row_comm);
+    // initialize submatrix
+    for(int i=0; i<S; i++){
+        for(int j=0; j<S; j++){
+            sub[i * S + j] = mat[(0 + i) * N + (0 + j)];
+        }
     }
 
-    if(my_rank==2){
-        int *submatrix2;
-        submatrix2= (int*) malloc(3*3*sizeof(int));
-
-        create_submatrix(3, 0, 6, mat, 3, submatrix2);
-        printf("Submatrix, Process %d\n", my_rank);
-        print_submatrix(3, submatrix2);
-        //MPI_Bcast(submatrix, 3*3, MPI_INT, 2, row_comm);
+    // Broadcast the entire submatrix from process 0 to all other processes in row_comm
+    MPI_Bcast(sub, S * S, MPI_INT, 0, col_comm);
+    
+    printf("Process %d, received\n", my_rank);
+    for (int i = 0; i < S; i++) {
+        for (int j = 0; j < S; j++) {
+            printf("%d ", sub[i * S + j]);
+        }
+        printf("\n");
     }
-
+    printf("\n");
+    
+    // Free the submatrix memory
+    free(sub);
     MPI_Type_free(&matrix_type);
     MPI_Finalize();
 
