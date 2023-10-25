@@ -36,22 +36,32 @@ int main(int argc, char *argv[]){
     submat = (int*) malloc(S*S*sizeof(int));
     mat = (int *) malloc(N * N * sizeof(int));
 
-    // create matrix datatype
-    int n = 3; // Size of the matrix
-    int blocklen = 1; // Number of elements in each block
-    int stride = 3; // Stride between matrix elements
-    MPI_Datatype matrix_type;
-    MPI_Type_vector(N, N*blocklen, stride, MPI_INT, &matrix_type);
-    MPI_Type_commit(&matrix_type);
-
     if(my_rank==0){
         for (int i = 0; i < N; i++)
             for (int j = 0; j < N; j++)
                 scanf("%d", &mat[i * N + j]);
 
-        //MPI_Bcast(mat, N*N, MPI_INT, 0, MPI_COMM_WORLD);
-        MPI_Bcast(&(mat[0]), N*N, matrix_type, 0, MPI_COMM_WORLD);
+        int proc = 0;
+        for(int i_init=0; i_init<=S; i_init+=S){
+            for(int j_init=0; j_init<=S; j_init+=S){
+                proc++;
+                for(int i=0; i<S; i++){
+                    for(int j=0; j<S; j++){
+                        submat[i * S + j] = mat[(i_init + i) * N + (j_init + j)];
+                    }
+                }
+                MPI_Send(submat, S*S, MPI_INT, proc, proc, MPI_COMM_WORLD);
+            }
+        }
     }
+    //int MPI_Send(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)
+    //int MPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status *status)
+
+    for(int proc=0; i<P; proc++){
+        MPI_Recv(submat, S*S, MPI_INT, 0, tag, MPI_COMM_WORLD, status);
+    }
+
+    //MPI_Bcast(mat, N*N, MPI_INT, 0, MPI_COMM_WORLD);
 
     printf("Process %d, N=%d, Q=%d, S=%d\n", my_rank, N, Q, S);
 
@@ -74,7 +84,6 @@ int main(int argc, char *argv[]){
 
     free(submat);
     free(mat);
-    MPI_Type_free(&matrix_type);
 
     MPI_Finalize();
 
