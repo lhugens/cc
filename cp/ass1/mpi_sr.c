@@ -28,7 +28,8 @@ int main(int argc, char *argv[]){
     } else {
         //MPI_Recv(data, 1, MPI_INT, ROOT, TAG, MPI_COMM_WORLD, &status);
         //MPI_Recv(data, 2, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status); // works
-        MPI_Recv(data, 2, MPI_INT, MPI_ANY_SOURCE, TAG, MPI_COMM_WORLD, &status); 
+        //MPI_Recv(data, 2, MPI_INT, MPI_ANY_SOURCE, TAG, MPI_COMM_WORLD, &status); // works
+        MPI_Recv(data, 2, MPI_INT, ROOT, TAG, MPI_COMM_WORLD, &status); // works
         //MPI_Recv(msg, 100, MPI_CHAR, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
     }
 
