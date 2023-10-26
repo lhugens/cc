@@ -39,40 +39,42 @@ int main(int argc, char *argv[]){
     submat = (int*) malloc(S * S * sizeof(int));
     mat = (int *) malloc(N * N * sizeof(int));
 
-    //printf("Process %d, N=%d, Q=%d, S=%d\n", my_rank, N, Q, S);
-
     if(my_rank == ROOT){
-        printf("Process %d\n", 0);
         for (int i = 0; i < N; i++){
             for (int j = 0; j < N; j++){
                 scanf("%d", &mat[i * N + j]);
-                printf("%d ", mat[i * N + j]);
-            }
-            printf("\n");
-        }
-        printf("\n");
-
-        int proc = 0;
-        for(int i_init=0; i_init<=S; i_init+=S){
-            for(int j_init=0; j_init<=S; j_init+=S){
-                //printf("proc=%d\n", proc);
-                for(int i=0; i<S; i++){
-                    for(int j=0; j<S; j++){
-                        submat[i * S + j] = mat[(i_init + i) * N + (j_init + j)];
-                        //printf("%d ", submat[i * S + j]);
-                    }
-                    //printf("\n");
-                }
-                //MPI_Send(submat, S*S, MPI_INT, proc, proc, MPI_COMM_WORLD);
-                MPI_Send(submat, S*S, MPI_INT, proc, TAG, MPI_COMM_WORLD);
-                //MPI_Send(data, 2, MPI_INT, proc, TAG, MPI_COMM_WORLD);
-                proc++;
             }
         }
     }
-    //MPI_Bcast(mat, N*N, MPI_INT, 0, MPI_COMM_WORLD);
 
-    MPI_Recv(submat, S*S, MPI_INT, ROOT, TAG, MPI_COMM_WORLD, &status); // works
+    MPI_Bcast(mat, N*N, MPI_INT, ROOT, MPI_COMM_WORLD);
+
+    //////////////////////////////////////////////
+
+    MPI_Comm grid_comm;
+    int dimensions[2], wrap_around[2], reorder = 1;
+    int coordinates[2], my_grid_rank;
+    dimensions[0] = dimensions[1] = Q;
+    wrap_around[0] = wrap_around[1] = 1;
+
+    MPI_Cart_create(MPI_COMM_WORLD, 2, dimensions, wrap_around, reorder, &grid_comm);
+
+    MPI_Comm_rank(grid_comm, &my_grid_rank);
+
+    MPI_Cart_coords(grid_comm, my_grid_rank, 2, coordinates);
+
+    int i_init = coordinates[0]*S;
+    int j_init = coordinates[1]*S;
+
+    printf("my_rank=%d, my_grid_rank=%d, coordinates=[%d,%d]\n", my_rank, my_grid_rank, coordinates[0], coordinates[1]);
+
+    //////////////////////////////////////////////
+
+    for(int i=0; i<S; i++){
+        for(int j=0; j<S; j++){
+            submat[i * S + j] = mat[(i_init + i) * N + (j_init + j)];
+        }
+    }
 
     printf("Process %d, submat:\n", my_rank);
     for(int i=0; i<S; i++){
