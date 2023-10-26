@@ -10,50 +10,56 @@
 void print(int n, int *D){
     for (int i = 0; i < n; i++){
         for (int j = 0; j < n; j++){
-            if(D[i * n + j]==-1){
-                printf("%d ", 0);
-            } else {
                 printf("%d ", D[i * n + j]);
             }
-        }
         printf("\n");
     }
+    printf("\n");
 }
 
 int special_vector_mult(int n, int x[], int y[]){
     int c = -1;
     for(int k=0; k<n; k++){
+        //printf("x[k]=%d, y[k]=%d\n", x[k], y[k]);
         if(x[k]!=-1 && y[k]!=-1){
             if(c != -1){
                 c = min(c, x[k]+y[k]);
             } else {
                 c = x[k]+y[k];
             }
-       }
+        }
+        //printf("c=%d\n", c);
     }
     return c;
 }
 
-int* special_matrix_mult(int n, int *A, int *B){
-    int *C, *row, *col;
-    C = (int *) malloc(n * n * sizeof(int));
-    row = (int *) malloc(n * sizeof(int));
-    col = (int *) malloc(n * sizeof(int));
+void special_matrix_mult(int n, int* A, int* B, int* C){
+    int *row = (int *) malloc(n * sizeof(int));
+    int *col = (int *) malloc(n * sizeof(int));
     for(int i=0; i<n; i++){
+        //printf("row %d\n", i);
         for(int j=0; j<n; j++){
             row[j] = A[i * n + j];
         }
+        for(int j=0; j<n; j++){
+            //printf("%d ", row[j]);
+        }
+        //printf("\n");
         for(int jp=0; jp<n; jp++){
+            //printf("col %d\n", jp);
             for(int k=0; k<n; k++){
                 col[k] = B[k * n + jp];
+                //printf("%d ", col[k]);
             }
+            //printf("\n");
             C[i * n + jp] = special_vector_mult(n, row, col);
+            //printf("result\n");
+            //printf("c = %d\n", C[i*N+jp]);
         }
     }
     free(row);
     free(col);
-    return C;
-} 
+}
 
 int main(int argc, char *argv[]){
     int P, my_rank;
@@ -61,6 +67,7 @@ int main(int argc, char *argv[]){
     double Q_candidate;
     int* submatA;
     int* submatB;
+    int* submatC;
     int* mat;
 
     MPI_Status status;
@@ -88,6 +95,7 @@ int main(int argc, char *argv[]){
 
     submatA = (int*) malloc(S * S * sizeof(int));
     submatB = (int*) malloc(S * S * sizeof(int));
+    submatC = (int*) malloc(S * S * sizeof(int));
     mat = (int *) malloc(N * N * sizeof(int));
 
     if(my_rank == ROOT){
@@ -96,8 +104,17 @@ int main(int argc, char *argv[]){
                 scanf("%d", &mat[i * N + j]);
             }
         }
+
+        for (int i = 0; i < N; i++){
+            for (int j = 0; j < N; j++){
+                if(i!=j && mat[i*N+j]==0){
+                    mat[i * N + j] = -1;
+                }
+            }
+        }
         printf("Process 0, mat:\n");
         print(N, mat);
+        printf("\n");
     }
 
     MPI_Bcast(mat, N*N, MPI_INT, ROOT, MPI_COMM_WORLD);
@@ -155,7 +172,6 @@ int main(int argc, char *argv[]){
 
     int step=0;
 
-
     int r = row_rank;
     int u = (r + step) % Q;
     int* chosen_coords = (int*) malloc(2*sizeof(int));
@@ -176,11 +192,17 @@ int main(int argc, char *argv[]){
 
     //////////////////////////////////////////////
 
+    special_matrix_mult(S, submatA, submatB, submatC);
+
+    //////////////////////////////////////////////
+
     printf("Process %d\n", my_rank);
     printf("SubmatA\n");
     print(S, submatA);
     printf("SubmatB\n");
     print(S, submatB);
+    printf("SubmatC\n");
+    print(S, submatC);
     printf("\n");
     //for(int i=0; i<S; i++){
     //    for(int j=0; j<S; j++){
@@ -193,6 +215,7 @@ int main(int argc, char *argv[]){
     free(mat);
     free(submatB);
     free(submatA);
+    free(submatC);
 
     MPI_Finalize();
 
