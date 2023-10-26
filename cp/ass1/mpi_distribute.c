@@ -59,8 +59,8 @@ int main(int argc, char *argv[]){
     int P, my_rank;
     int N, Q, S;
     double Q_candidate;
-    int* submatB;
     int* submatA;
+    int* submatB;
     int* mat;
 
     MPI_Status status;
@@ -86,6 +86,7 @@ int main(int argc, char *argv[]){
 
     S = N / Q;
 
+    submatA = (int*) malloc(S * S * sizeof(int));
     submatB = (int*) malloc(S * S * sizeof(int));
     mat = (int *) malloc(N * N * sizeof(int));
 
@@ -95,6 +96,8 @@ int main(int argc, char *argv[]){
                 scanf("%d", &mat[i * N + j]);
             }
         }
+        printf("Process 0, mat:\n");
+        print(N, mat);
     }
 
     MPI_Bcast(mat, N*N, MPI_INT, ROOT, MPI_COMM_WORLD);
@@ -116,16 +119,18 @@ int main(int argc, char *argv[]){
     int i_init = coordinates[0]*S;
     int j_init = coordinates[1]*S;
 
-    printf("Process %d\n", my_rank);
-    printf("my_rank=%d, my_grid_rank=%d, coordinates=[%d,%d]\n", my_rank, my_grid_rank, coordinates[0], coordinates[1]);
+    //printf("Process %d\n", my_rank);
+    //printf("my_rank=%d, my_grid_rank=%d, coordinates=[%d,%d]\n", my_rank, my_grid_rank, coordinates[0], coordinates[1]);
 
     //////////////////////////////////////////////
 
     for(int i=0; i<S; i++){
         for(int j=0; j<S; j++){
-            submatB[i * S + j] = mat[(i_init + i) * N + (j_init + j)];
+            submatA[i * S + j] = mat[(i_init + i) * N + (j_init + j)];
+            submatB[i * S + j] = submatA[i * S + j];
         }
     }
+
 
     //////////////////////////////////////////////
     
@@ -146,7 +151,7 @@ int main(int argc, char *argv[]){
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    printf("Global Rank: %d, Row Rank: %d\n", my_rank, row_rank);
+    //printf("Global Rank: %d, Row Rank: %d\n", my_rank, row_rank);
 
     int step=0;
 
@@ -158,24 +163,25 @@ int main(int argc, char *argv[]){
     chosen_coords[1] = u;
 
     int step2_root;
-    MPI_Cart_rank(grid_comm, chosen_coords, &step2_root);
+    MPI_Cart_rank(row_comm, chosen_coords, &step2_root);
 
     //int* submatC = (int*) malloc(S * S * sizeof(int));
     
-    printf("r=%d, u=%d -> Chose submatrix in proc: step2_root=%d\n", r, u, step2_root);
+    //printf("r=%d, u=%d -> Chose submatrix in proc: step2_root=%d\n", r, u, step2_root);
 
-    printf("Process before%d, submatB:\n", my_rank);
-    print(S, submatB);
-
-    MPI_Bcast(submatB, S*S, MPI_INT, step2_root, grid_comm);
+    //printf("Bcast from proc %d\n", step2_root);
+    MPI_Bcast(submatA, S*S, MPI_INT, step2_root, row_comm);
     
     MPI_Barrier(MPI_COMM_WORLD);
 
-
     //////////////////////////////////////////////
 
-    printf("Process after%d, submatB:\n", my_rank);
+    printf("Process %d\n", my_rank);
+    printf("SubmatA\n");
+    print(S, submatA);
+    printf("SubmatB\n");
     print(S, submatB);
+    printf("\n");
     //for(int i=0; i<S; i++){
     //    for(int j=0; j<S; j++){
     //        printf("%d ", submatB[i*S+j]);
