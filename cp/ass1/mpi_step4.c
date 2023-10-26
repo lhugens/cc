@@ -57,7 +57,8 @@ int main(int argc, char *argv[]){
     printf("Send: Process %d, grid_rank=%d, sending data to process %d\n", my_rank, my_grid_rank, dest_rank);
     MPI_Send(data, 2, MPI_INT, dest_rank, TAG, grid_comm);
     printf("Recv: Process %d, grid_rank=%d, receiving data from process %d\n", my_rank, my_grid_rank, dest_rank);
-    MPI_Recv(data, 2, MPI_INT, my_grid_rank, TAG, grid_comm, &status); // works
+    MPI_Recv(data, 2, MPI_INT, MPI_ANY_SOURCE, TAG, grid_comm, &status); // works
+    printf("hello");
     
     printf("data=[%d,%d]", data[0], data[1]);
     
