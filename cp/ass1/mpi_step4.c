@@ -8,7 +8,6 @@
 int main(int argc, char *argv[]){
     int P, my_rank;
     int *data = (int*) malloc(2*sizeof(int));
-    data[0] = data[1] = 9;
 
     MPI_Status status;
 
@@ -17,6 +16,7 @@ int main(int argc, char *argv[]){
     MPI_Comm_size(MPI_COMM_WORLD, &P);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
+    data[0] = data[1] = my_rank;
 
     // GRID COMM
     MPI_Comm grid_comm;
@@ -58,9 +58,8 @@ int main(int argc, char *argv[]){
     MPI_Send(data, 2, MPI_INT, dest_rank, TAG, grid_comm);
     printf("Recv: Process %d, grid_rank=%d, receiving data from process %d\n", my_rank, my_grid_rank, dest_rank);
     MPI_Recv(data, 2, MPI_INT, MPI_ANY_SOURCE, TAG, grid_comm, &status); // works
-    printf("hello");
     
-    printf("data=[%d,%d]", data[0], data[1]);
+    printf("data=[%d,%d]\n", data[0], data[1]);
     
 
     MPI_Finalize();
