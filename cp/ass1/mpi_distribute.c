@@ -61,6 +61,33 @@ void special_matrix_mult(int n, int* A, int* B, int* C){
     free(col);
 }
 
+void special_matrix_min(int S, int* A, int* B, int* C){
+    int a = -1;
+    int b = -1;
+    //printf("Min of:\n");
+    //printf("Matrix A:\n");
+    //print(S, A);
+    //printf("Matrix B:\n");
+    //print(S, B);
+    for(int i=0; i<S; i++){
+        for(int j=0; j<S; j++){
+            a = A[i * S + j];
+            b = B[i * S + j];
+            if (a!=-1 && b!=-1){
+                C[i*S+j] = min(a, b);
+            } else if (a==-1){
+                C[i*S+j] = b;
+            } else if (b==-1){
+                C[i*S+j] = a;
+            } else {
+                C[i*S+j] = -1;
+            }
+        }
+    }
+    //printf("Min Matrix C:\n");
+    //print(S, C);
+}
+
 int main(int argc, char *argv[]){
     int P, my_rank;
     int N, Q, S;
@@ -174,6 +201,10 @@ int main(int argc, char *argv[]){
     //printf("Global Rank: %d, Row Rank: %d\n", my_rank, row_rank);
 
     int* chosen_coords = (int*) malloc(2*sizeof(int));
+    int dest_coordinates[2];
+    int source_coordinates[2];
+    int dest_rank;
+    int source_rank;
 
     int m=1;
 
@@ -185,8 +216,6 @@ int main(int argc, char *argv[]){
                     submatB[i * S + j] = submatACC[i * S + j];
                 }
             }
-            //submatA = submatACC;
-            //submatB = submatACC;
         }
         for(int i=0; i<S; i++)
             for(int j=0; j<S; j++)
@@ -201,14 +230,34 @@ int main(int argc, char *argv[]){
             MPI_Cart_rank(row_comm, chosen_coords, &step2_root);
     
             //printf("Bcast from proc %d\n", step2_root);
+
+            MPI_Barrier(MPI_COMM_WORLD);
             
             //////////////////////////////// STAGE 2 //////////////////////////////// 
+            //printf("I am proc %d, Step %d, Process %d Broadcasting submatA to row procs\n", my_rank, step, step2_root);
+            int bcast_coordinates[2];
+            MPI_Cart_coords(row_comm, step2_root, 2, bcast_coordinates);
+            //printf("I am Process %d, Bcast submatA%d%d\n", my_rank, bcast_coordinates[0], bcast_coordinates[1]);
+            if(step>0){
+                printf("I am Process %d, Bcast submatA%d%d\n", my_rank, chosen_coords[0], chosen_coords[1]);
+            }
             MPI_Bcast(submatA, S*S, MPI_INT, step2_root, row_comm);
+            //printf("Process %d, submatA:\n", my_rank);
+            //print(S, submatA);
             
             MPI_Barrier(MPI_COMM_WORLD);
     
             //////////////////////////////// STAGE 3 //////////////////////////////// 
+            //printf("Process %d, Special matrix mult:\n", my_rank);
+            //printf("submatA\n");
+            //print(S, submatA);
+            //printf("submatB\n");
+            //print(S, submatB);
+            //printf("\n");
+
             special_matrix_mult(S, submatA, submatB, submatC);
+
+            MPI_Barrier(MPI_COMM_WORLD);
     
             //printf("Process %d\n", my_rank);
             //printf("SubmatA\n");
@@ -227,15 +276,18 @@ int main(int argc, char *argv[]){
             //printf("\n");
     
             //////////////////////////////// STAGE 4 //////////////////////////////// 
-            int dest_coordinates[2];
-            int dest_rank;
             dest_coordinates[0] = coordinates[0]-1;
             dest_coordinates[1] = coordinates[1];
             MPI_Cart_rank(grid_comm, dest_coordinates, &dest_rank);
-            //printf("Send: Process %d, grid_rank=%d, sending submatB to process %d\n", my_rank, my_grid_rank, dest_rank);
+            //printf("Send: Process %d sending submatB to process %d\n", my_grid_rank, dest_rank);
             MPI_Send(submatB, S*S, MPI_INT, dest_rank, TAG, grid_comm);
-            //printf("Recv: Process %d, grid_rank=%d, receiving submatB from process %d\n", my_rank, my_grid_rank, dest_rank);
-            MPI_Recv(submatB, S*S, MPI_INT, MPI_ANY_SOURCE, TAG, grid_comm, &status); 
+            source_coordinates[0] = coordinates[0]+1;
+            source_coordinates[1] = coordinates[1];
+            MPI_Cart_rank(grid_comm, source_coordinates, &source_rank);
+            //printf("Recv: Process %d receiving submatB from process %d\n", my_grid_rank, source_rank);
+            MPI_Recv(submatB, S*S, MPI_INT, source_rank, TAG, grid_comm, &status); 
+            //print(S, submatB);
+            //printf("\n");
     
             if(step == 0){
                 //submatACC = submatC;
@@ -243,34 +295,23 @@ int main(int argc, char *argv[]){
                     for(int j=0; j<S; j++)
                         submatACC[i * S + j] = submatC[i * S + j];
             } else {
-                for(int i=0; i<S; i++){
-                    for(int j=0; j<S; j++){
-                        int el_ACC = submatACC[i * S + j];
-                        int el_C = submatC[i * S + j];
-                        if (el_ACC != -1 && el_C != -1){
-                            submatACC[i * S + j] = min(el_ACC, el_C);
-                        } else {
-                            if (el_ACC == -1){
-                                submatACC[i * S + j] = el_C;
-                            } else if (el_C == -1){
-                                submatACC[i * S + j] = el_ACC;
-                            }
-                        }
-                    }
-                }
+                special_matrix_min(S, submatC, submatACC, submatACC);
+                //printf("Step %d, Process %d, submatACC:\n", step, my_rank);
+                //print(S, submatACC);
             }
+            //printf("Finished step %d\n", step);
+            MPI_Barrier(MPI_COMM_WORLD);
         }
         m = m*2;
-        printf("m=%d\n", m);
         break;
     }
 
     //printf("Process %d, submatACC:\n", my_rank);
     //print(S, submatACC);
     //printf("\n");
-    printf("Process %d, submatC:\n", my_rank);
-    print(S, submatC);
-    printf("\n");
+    //printf("Process %d, submatACC:\n", my_rank);
+    //print(S, submatACC);
+    //printf("\n");
 
     free(mat);
     free(submatA);
