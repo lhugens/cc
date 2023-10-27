@@ -65,10 +65,11 @@ int main(int argc, char *argv[]){
     int P, my_rank;
     int N, Q, S;
     double Q_candidate;
+    int* mat;
     int* submatA;
     int* submatB;
     int* submatC;
-    int* mat;
+    int* submatACC;
 
     MPI_Status status;
 
@@ -93,10 +94,12 @@ int main(int argc, char *argv[]){
 
     S = N / Q;
 
+    mat = (int *) malloc(N * N * sizeof(int));
     submatA = (int*) malloc(S * S * sizeof(int));
     submatB = (int*) malloc(S * S * sizeof(int));
     submatC = (int*) malloc(S * S * sizeof(int));
-    mat = (int *) malloc(N * N * sizeof(int));
+    submatACC = (int*) malloc(S * S * sizeof(int));
+
 
     if(my_rank == ROOT){
         for (int i = 0; i < N; i++){
@@ -172,66 +175,103 @@ int main(int argc, char *argv[]){
 
     int* chosen_coords = (int*) malloc(2*sizeof(int));
 
-    int step=0;
+    int m=1;
 
-    // step 1 //
-    chosen_coords[0] = row_rank;
-    chosen_coords[1] = (row_rank + step) % Q;
+    while(m<N-1){
+        if(m>1){
+            for(int i=0; i<S; i++){
+                for(int j=0; j<S; j++){
+                    submatA[i * S + j] = submatACC[i * S + j];
+                    submatB[i * S + j] = submatACC[i * S + j];
+                }
+            }
+            //submatA = submatACC;
+            //submatB = submatACC;
+        }
+        for(int i=0; i<S; i++)
+            for(int j=0; j<S; j++)
+                submatACC[i * S + j] = -1;
 
-    int step2_root;
-    MPI_Cart_rank(row_comm, chosen_coords, &step2_root);
-
-    //printf("r=%d, u=%d -> Chose submatrix in proc: step2_root=%d\n", r, u, step2_root);
-
-    //printf("Bcast from proc %d\n", step2_root);
+        for(int step=0; step<Q; step++){
+            //////////////////////////////// STAGE 1 //////////////////////////////// 
+            chosen_coords[0] = row_rank;
+            chosen_coords[1] = (row_rank + step) % Q;
     
-    // step 2 //
-    MPI_Bcast(submatA, S*S, MPI_INT, step2_root, row_comm);
+            int step2_root;
+            MPI_Cart_rank(row_comm, chosen_coords, &step2_root);
     
-    MPI_Barrier(MPI_COMM_WORLD);
+            //printf("Bcast from proc %d\n", step2_root);
+            
+            //////////////////////////////// STAGE 2 //////////////////////////////// 
+            MPI_Bcast(submatA, S*S, MPI_INT, step2_root, row_comm);
+            
+            MPI_Barrier(MPI_COMM_WORLD);
+    
+            //////////////////////////////// STAGE 3 //////////////////////////////// 
+            special_matrix_mult(S, submatA, submatB, submatC);
+    
+            //printf("Process %d\n", my_rank);
+            //printf("SubmatA\n");
+            //print(S, submatA);
+            //printf("SubmatB\n");
+            //print(S, submatB);
+            //printf("SubmatC\n");
+            //print(S, submatC);
+            //printf("\n");
+            //for(int i=0; i<S; i++){
+            //    for(int j=0; j<S; j++){
+            //        printf("%d ", submatB[i*S+j]);
+            //    }
+            //    printf("\n");
+            //}
+            //printf("\n");
+    
+            //////////////////////////////// STAGE 4 //////////////////////////////// 
+            int dest_coordinates[2];
+            int dest_rank;
+            dest_coordinates[0] = coordinates[0]-1;
+            dest_coordinates[1] = coordinates[1];
+            MPI_Cart_rank(grid_comm, dest_coordinates, &dest_rank);
+            //printf("Send: Process %d, grid_rank=%d, sending submatB to process %d\n", my_rank, my_grid_rank, dest_rank);
+            MPI_Send(submatB, S*S, MPI_INT, dest_rank, TAG, grid_comm);
+            //printf("Recv: Process %d, grid_rank=%d, receiving submatB from process %d\n", my_rank, my_grid_rank, dest_rank);
+            MPI_Recv(submatB, S*S, MPI_INT, MPI_ANY_SOURCE, TAG, grid_comm, &status); 
+    
+            if(step == 0){
+                //submatACC = submatC;
+                for(int i=0; i<S; i++)
+                    for(int j=0; j<S; j++)
+                        submatACC[i * S + j] = submatC[i * S + j];
+            } else {
+                for(int i=0; i<S; i++){
+                    for(int j=0; j<S; j++){
+                        int el_ACC = submatACC[i * S + j];
+                        int el_C = submatC[i * S + j];
+                        if (el_ACC != -1 && el_C != -1){
+                            submatACC[i * S + j] = min(el_ACC, el_C);
+                        } else {
+                            if (el_ACC == -1){
+                                submatACC[i * S + j] = el_C;
+                            } else if (el_C == -1){
+                                submatACC[i * S + j] = el_ACC;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        m = m*2;
+    }
 
-    //////////////////////////////////////////////
-
-    // step 3 //
-    special_matrix_mult(S, submatA, submatB, submatC);
-
-    //////////////////////////////////////////////
-
-    //printf("Process %d\n", my_rank);
-    //printf("SubmatA\n");
-    //print(S, submatA);
-    //printf("SubmatB\n");
-    //print(S, submatB);
-    //printf("SubmatC\n");
-    //print(S, submatC);
-    //printf("\n");
-    //for(int i=0; i<S; i++){
-    //    for(int j=0; j<S; j++){
-    //        printf("%d ", submatB[i*S+j]);
-    //    }
-    //    printf("\n");
-    //}
-    //printf("\n");
-
-    // step 4 //
-    int dest_coordinates[2];
-    int dest_rank;
-    dest_coordinates[0] = coordinates[0]-1;
-    dest_coordinates[1] = coordinates[1];
-    MPI_Cart_rank(grid_comm, dest_coordinates, &dest_rank);
-    printf("Send: Process %d, grid_rank=%d, sending submatB to process %d\n", my_rank, my_grid_rank, dest_rank);
-    MPI_Send(submatB, S*S, MPI_INT, dest_rank, TAG, grid_comm);
-    printf("Recv: Process %d, grid_rank=%d, receiving submatB from process %d\n", my_rank, my_grid_rank, dest_rank);
-    MPI_Recv(submatB, S*S, MPI_INT, MPI_ANY_SOURCE, TAG, grid_comm, &status); 
-
-    printf("Process %d, submatB:\n", my_rank);
-    print(S, submatB);
+    printf("Process %d, submatACC:\n", my_rank);
+    print(S, submatACC);
     printf("\n");
 
     free(mat);
-    free(submatB);
     free(submatA);
+    free(submatB);
     free(submatC);
+    free(submatACC);
 
     MPI_Finalize();
 
