@@ -261,10 +261,15 @@ int main(int argc, char *argv[]){
             }
         }
         m = m*2;
+        printf("m=%d\n", m);
+        break;
     }
 
-    printf("Process %d, submatACC:\n", my_rank);
-    print(S, submatACC);
+    //printf("Process %d, submatACC:\n", my_rank);
+    //print(S, submatACC);
+    //printf("\n");
+    printf("Process %d, submatC:\n", my_rank);
+    print(S, submatC);
     printf("\n");
 
     free(mat);
