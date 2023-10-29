@@ -6,7 +6,7 @@
 #define ROOT 0
 #define TAG 0
 
-#define MAX 360000  // 2^16
+#define MAX 360000  // input1200, for P=4, has submatrices 600x600=360000
 typedef struct {
     int     S;
     #define Size(A) ((A)->S)                                      // defination with parameters
@@ -71,6 +71,31 @@ void Read_matrix(SUBMAT_T* A, GRID_INFO_T* grid, int n) {
     }
                      
 }  /* Read_matrix */
+
+void SetBeqA(SUBMAT_T* A, SUBMAT_T* B, GRID_INFO_T* grid, int n){
+    int mat_row, mat_col;
+    int grid_col;
+    for(mat_row = 0; mat_row < n; mat_row++)
+        for (grid_col = 0; grid_col < grid->Q; grid_col++) 
+            for(mat_col=0; mat_col<Size(A); mat_col++)
+                *(B->entries + mat_row * Size(B) + mat_col) = *(A->entries + mat_row * Size(A) + mat_col);
+}
+
+void Convert(SUBMAT_T* A, GRID_INFO_T* grid, int n){
+    int mat_row, mat_col;
+    int grid_col;
+    int temp;
+    for(mat_row = 0; mat_row < n; mat_row++){
+        for (grid_col = 0; grid_col < grid->Q; grid_col++) {
+            for(mat_col=0; mat_col<Size(A); mat_col++){
+                temp = *(A->entries + mat_row * Size(A) + mat_col);
+                if(mat_row!=mat_col && temp==0){
+                    *(A->entries + mat_row * Size(A) + mat_col) = -1;
+                }
+            }
+        }
+    }
+}
 
 void Print_matrix(char* title, SUBMAT_T* A, GRID_INFO_T* grid, int n) {
     int mat_row, mat_col;
@@ -188,6 +213,8 @@ int main(int argc, char *argv[]){
 
     SUBMAT_T* submatA = (SUBMAT_T*) malloc(sizeof(SUBMAT_T));
     Size(submatA) = S;
+    SUBMAT_T* submatB = (SUBMAT_T*) malloc(sizeof(SUBMAT_T));
+    Size(submatB) = S;
 
     //printf("%d ", submatA->S);
 
@@ -195,9 +222,15 @@ int main(int argc, char *argv[]){
 
     Read_matrix(submatA, &grid, N); 
 
+    Convert(submatA, &grid, N);
+
+    SetBeqA(submatA, submatB, &grid, N);
+
     Print_matrix("SubmatA\n", submatA, &grid, N);
+    Print_matrix("SubmatB\n", submatB, &grid, N);
 
     free(submatA);
+    free(submatB);
 
     MPI_Finalize();
 
