@@ -6,7 +6,7 @@
 #define ROOT 0
 #define TAG 0
 
-#define MAX 65536  // 2^16
+#define MAX 360000  // 2^16
 typedef struct {
     int     S;
     #define Size(A) ((A)->S)                                      // defination with parameters
@@ -186,9 +186,7 @@ int main(int argc, char *argv[]){
 
     S = N / Q;
 
-    SUBMAT_T* submatA;
-
-    submatA = (SUBMAT_T*) malloc(sizeof(SUBMAT_T));
+    SUBMAT_T* submatA = (SUBMAT_T*) malloc(sizeof(SUBMAT_T));
     Size(submatA) = S;
 
     //printf("%d ", submatA->S);
