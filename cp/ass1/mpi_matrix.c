@@ -35,7 +35,44 @@ void print(int n, int *D){
     printf("\n");
 }
 
-void Print_matrix(char* title, SUBMAT_T* local_A, GRID_INFO_T* grid, int n) {
+void Read_matrix(SUBMAT_T* A, GRID_INFO_T* grid, int n) {
+    int mat_row, mat_col;
+    int grid_row, grid_col;
+    int dest;
+    int coords[2];
+    int* temp;
+    MPI_Status status;
+    
+    if (grid->my_rank == 0) {  // Process 0 read matrix input from stdin and send them to other processess
+        temp = (int*) malloc(Size(A)*sizeof(int));
+        //printf("%s\n", prompt);
+        fflush(stdout);
+        for (mat_row = 0;  mat_row < n; mat_row++) {
+            grid_row = mat_row/Size(A);
+            coords[0] = grid_row;
+            for (grid_col = 0; grid_col < grid->Q; grid_col++) {
+                coords[1] = grid_col;
+                MPI_Cart_rank(grid->comm, coords, &dest);
+                if (dest == 0) {
+                    for (mat_col = 0; mat_col < Size(A); mat_col++)
+                        scanf("%d", (A->entries)+mat_row*Size(A)+mat_col);
+                } else {
+                    for(mat_col = 0; mat_col < Size(A); mat_col++)
+                        scanf("%d", temp + mat_col);
+                    MPI_Send(temp, Size(A), MPI_INT, dest, 0, grid->comm);
+                }
+            }
+        }
+        free(temp);
+    } else {  // Other processess receive matrix from process 0
+        for (mat_row = 0; mat_row < Size(A); mat_row++) 
+            MPI_Recv(&Entry(A, mat_row, 0), Size(A), 
+                MPI_INT, 0, 0, grid->comm, &status);
+    }
+                     
+}  /* Read_matrix */
+
+void Print_matrix(char* title, SUBMAT_T* A, GRID_INFO_T* grid, int n) {
     int mat_row, mat_col;
     int grid_row, grid_col;
     int source;
@@ -44,20 +81,20 @@ void Print_matrix(char* title, SUBMAT_T* local_A, GRID_INFO_T* grid, int n) {
     MPI_Status status;
 
     if (grid->my_rank == 0) {
-        temp = (int*) malloc(Size(local_A)*sizeof(int));
+        temp = (int*) malloc(Size(A)*sizeof(int));
         printf("%s\n", title);
         for (mat_row = 0;  mat_row < n; mat_row++) {
-            grid_row = mat_row/Size(local_A);
+            grid_row = mat_row/Size(A);
             coords[0] = grid_row;
             for (grid_col = 0; grid_col < grid->Q; grid_col++) {
                 coords[1] = grid_col;
                 MPI_Cart_rank(grid->comm, coords, &source);
                 if (source == 0) {
-                    for(mat_col = 0; mat_col < Size(local_A); mat_col++)
-                        printf("%d ", Entry(local_A, mat_row, mat_col));
+                    for(mat_col = 0; mat_col < Size(A); mat_col++)
+                        printf("%d ", Entry(A, mat_row, mat_col));
                 } else {
-                    MPI_Recv(temp, Size(local_A), MPI_INT, source, 0, grid->comm, &status);
-                    for(mat_col = 0; mat_col < Size(local_A); mat_col++)
+                    MPI_Recv(temp, Size(A), MPI_INT, source, 0, grid->comm, &status);
+                    for(mat_col = 0; mat_col < Size(A); mat_col++)
                         printf("%d ", temp[mat_col]);
                 }
             }
@@ -65,8 +102,8 @@ void Print_matrix(char* title, SUBMAT_T* local_A, GRID_INFO_T* grid, int n) {
         }
         free(temp);
     } else {
-        for (mat_row = 0; mat_row < Size(local_A); mat_row++) 
-            MPI_Send(&Entry(local_A, mat_row, 0), Size(local_A), MPI_INT, 0, 0, grid->comm);
+        for (mat_row = 0; mat_row < Size(A); mat_row++) 
+            MPI_Send(&Entry(A, mat_row, 0), Size(A), MPI_INT, 0, 0, grid->comm);
     }
                      
 }  /* Print_matrix */
@@ -145,6 +182,8 @@ int main(int argc, char *argv[]){
 
     MPI_Bcast(&N, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
+    //printf("N=%d\n", N);
+
     S = N / Q;
 
     SUBMAT_T* submatA;
@@ -156,37 +195,7 @@ int main(int argc, char *argv[]){
 
     /////////////////////////// READ MATRIX ///////////////////////////
 
-    //Read_matrix(submatA, &grid, n); 
-
-    int mat_row, mat_col;
-    int grid_row, grid_col;
-    int dest;
-    int coords[2];
-    int* temp;
-
-    if (grid.my_rank == 0) {  // Process 0 read matrix input from stdin and send them to other processess
-        temp = (int*) malloc(Size(submatA)*sizeof(int));
-        for (mat_row = 0;  mat_row < N; mat_row++) {
-            grid_row = mat_row/Size(submatA);
-            coords[0] = grid_row;
-            for (grid_col = 0; grid_col < grid.Q; grid_col++) {
-                coords[1] = grid_col;
-                MPI_Cart_rank(grid.comm, coords, &dest);
-                if (dest == 0) {
-                    for (mat_col = 0; mat_col < Size(submatA); mat_col++)
-                        scanf("%d", (submatA->entries)+mat_row*Size(submatA)+mat_col);
-                } else {
-                    for(mat_col = 0; mat_col < Size(submatA); mat_col++)
-                        scanf("%f", temp + mat_col);
-                    MPI_Send(temp, Size(submatA), MPI_INT, dest, 0, grid.comm);
-                }
-            }
-        }
-        free(temp);
-    } else {  // Other processess receive matrix from process 0
-        for (mat_row = 0; mat_row < Size(submatA); mat_row++) 
-            MPI_Recv(&Entry(submatA, mat_row, 0), Size(submatA), MPI_INT, 0, 0, grid.comm, &status);
-    }
+    Read_matrix(submatA, &grid, N); 
 
     Print_matrix("SubmatA\n", submatA, &grid, N);
 
