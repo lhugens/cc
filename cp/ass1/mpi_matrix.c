@@ -72,30 +72,21 @@ void Read_matrix(SUBMAT_T* A, GRID_INFO_T* grid, int n) {
                      
 }  /* Read_matrix */
 
-void SetBeqA(SUBMAT_T* A, SUBMAT_T* B, GRID_INFO_T* grid, int n){
-    int mat_row, mat_col;
-    int grid_col;
-    for(mat_row = 0; mat_row < n; mat_row++)
-        for (grid_col = 0; grid_col < grid->Q; grid_col++) 
-            for(mat_col=0; mat_col<Size(A); mat_col++)
-                *(B->entries + mat_row * Size(B) + mat_col) = *(A->entries + mat_row * Size(A) + mat_col);
-}
-
-void Convert(SUBMAT_T* A, GRID_INFO_T* grid, int n){
-    int mat_row, mat_col;
-    int grid_col;
-    int temp;
-    for(mat_row = 0; mat_row < n; mat_row++){
-        for (grid_col = 0; grid_col < grid->Q; grid_col++) {
-            for(mat_col=0; mat_col<Size(A); mat_col++){
-                temp = *(A->entries + mat_row * Size(A) + mat_col);
-                if(mat_row!=mat_col && temp==0){
-                    *(A->entries + mat_row * Size(A) + mat_col) = -1;
-                }
+void Convert(SUBMAT_T* A) {
+    int i, j;
+    for (i = 0; i < Size(A); i++)
+        for (j = 0; j < Size(A); j++)
+            if(i!=j && Entry(A,i,j)==0){
+                Entry(A,i,j) = -1;
             }
-        }
-    }
-}
+}  
+
+void SetBeqA(SUBMAT_T* A, SUBMAT_T* B) {
+    int i, j;
+    for (i = 0; i < Size(A); i++)
+        for (j = 0; j < Size(A); j++)
+            Entry(B,i,j) = Entry(A,i,j);
+}  
 
 void Print_matrix(char* title, SUBMAT_T* A, GRID_INFO_T* grid, int n) {
     int mat_row, mat_col;
@@ -213,8 +204,13 @@ int main(int argc, char *argv[]){
 
     SUBMAT_T* submatA = (SUBMAT_T*) malloc(sizeof(SUBMAT_T));
     Size(submatA) = S;
+    SUBMAT_T* temp_submatA = (SUBMAT_T*) malloc(sizeof(SUBMAT_T));
+    Size(temp_submatA) = S;
     SUBMAT_T* submatB = (SUBMAT_T*) malloc(sizeof(SUBMAT_T));
     Size(submatB) = S;
+    SUBMAT_T* submatC = (SUBMAT_T*) malloc(sizeof(SUBMAT_T));
+    Size(submatC) = S;
+
 
     //printf("%d ", submatA->S);
 
@@ -222,9 +218,22 @@ int main(int argc, char *argv[]){
 
     Read_matrix(submatA, &grid, N); 
 
-    Convert(submatA, &grid, N);
+    //Convert(submatA);
 
-    SetBeqA(submatA, submatB, &grid, N);
+    SetBeqA(submatA, submatB);
+
+    int step = 0;
+    int chosen_root = (grid.my_row + step) % grid.Q;
+
+    if (chosen_root == grid.my_col) {
+        MPI_Bcast(submatA, S*S, MPI_INT, chosen_root, grid.row_comm);
+        //special_matrix_mult(S, submatA, submatB, submatC);
+        SetBeqA(submatB, submatA);
+    } else {
+        MPI_Bcast(temp_submatA, S*S, MPI_INT, chosen_root, grid.row_comm);
+        //special_matrix_mult(S, temp_submatA, submatB, submatC);
+        SetBeqA(submatB, temp_submatA);
+    }
 
     Print_matrix("SubmatA\n", submatA, &grid, N);
     Print_matrix("SubmatB\n", submatB, &grid, N);
