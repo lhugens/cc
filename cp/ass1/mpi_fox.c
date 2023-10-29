@@ -79,6 +79,7 @@ int main(int argc, char *argv[]){
     int* submatB;
     int* submatC;
     int* submatACC;
+    int* submatGATHER;
 
     MPI_Status status;
 
@@ -109,7 +110,7 @@ int main(int argc, char *argv[]){
     submatB = (int*) malloc(S * S * sizeof(int));
     submatC = (int*) malloc(S * S * sizeof(int));
     submatACC = (int*) malloc(S * S * sizeof(int));
-
+    submatGATHER = (int*) malloc(S * S * sizeof(int));
 
     if(my_rank == ROOT){
         for (int i = 0; i < N; i++){
@@ -125,9 +126,9 @@ int main(int argc, char *argv[]){
                 }
             }
         }
-        printf("Process 0, mat:\n");
-        print(N, mat);
-        printf("\n");
+        //printf("Process 0, mat:\n");
+        //print(N, mat);
+        //printf("\n");
     }
 
     MPI_Bcast(mat, N*N, MPI_INT, ROOT, MPI_COMM_WORLD);
@@ -225,10 +226,27 @@ int main(int argc, char *argv[]){
         m = m*2;
     }
 
-    printf("Process %d, submatACC\n", my_rank);
-    print(S, submatACC);
-    printf("\n");
+    MPI_Send(submatACC, S*S, MPI_INT, ROOT, TAG, MPI_COMM_WORLD);
 
+    if(my_rank==0){
+        for(int i=0; i<S; i++)
+            for(int j=0; j<S; j++)
+                mat[i * N + j] = submatACC[i * S + j];
+        for(int proc=1; proc<P; proc++){
+            MPI_Recv(submatGATHER, S*S, MPI_INT, proc, TAG, MPI_COMM_WORLD, &status);
+            //printf("Recv from proc %d, submatACC\n", proc);
+            //print(S, submatGATHER);
+            //printf("\n");
+
+            MPI_Cart_coords(grid_comm, proc, 2, coordinates);
+            i_init = coordinates[0]*S;
+            j_init = coordinates[1]*S;
+            for(int i=0; i<S; i++)
+                for(int j=0; j<S; j++)
+                    mat[(i_init + i) * N + (j_init + j)] = submatGATHER[i * S + j];
+        }
+        print(N, mat);
+    }
 
     MPI_Finalize();
 
