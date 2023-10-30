@@ -5,6 +5,7 @@
 
 #define ROOT 0
 #define TAG 0
+#define min(a, b) a < b ? a : b
 
 #define MAX 360000  // input1200, for P=4, has submatrices 600x600=360000
 typedef struct {
@@ -87,6 +88,41 @@ void SetBeqA(SUBMAT_T* A, SUBMAT_T* B) {
         for (j = 0; j < Size(A); j++)
             Entry(B,i,j) = Entry(A,i,j);
 }  
+
+int special_vector_mult(int n, int x[], int y[]){
+    int c = -1;
+    for(int k=0; k<n; k++){
+        if(x[k]!=-1 && y[k]!=-1){
+            if(c != -1){
+                c = min(c, x[k]+y[k]);
+            } else {
+                c = x[k]+y[k];
+            }
+        }
+    }
+    return c;
+}
+
+void special_matrix_mult(SUBMAT_T* A, SUBMAT_T* B, SUBMAT_T* C){
+    int *row = (int *) malloc(Size(A) * sizeof(int));
+    int *col = (int *) malloc(Size(A) * sizeof(int));
+    for(int i=0; i<Size(A); i++){
+        for(int j=0; j<Size(B); j++){
+            //row[j] = A[i * n + j];
+            row[j] = Entry(A,i,j);
+        }
+        for(int jp=0; jp<Size(B); jp++){
+            for(int k=0; k<Size(B); k++){
+                //col[k] = B[k * n + jp];
+                col[k] = Entry(B,k,jp);
+            }
+            //C[i * n + jp] = special_vector_mult(n, row, col);
+            Entry(C,i,jp) = special_vector_mult(Size(A), row, col);
+        }
+    }
+    free(row);
+    free(col);
+}
 
 void Print_matrix(char* title, SUBMAT_T* A, GRID_INFO_T* grid, int n) {
     int mat_row, mat_col;
@@ -211,6 +247,18 @@ int main(int argc, char *argv[]){
     SUBMAT_T* submatC = (SUBMAT_T*) malloc(sizeof(SUBMAT_T));
     Size(submatC) = S;
 
+    int blocklengths[2];
+    MPI_Datatype SUBMAT_T_MPI, oldtypes[2];
+    MPI_Aint int_length, offsets[2];
+    MPI_Type_extent(MPI_INT, &int_length);
+    blocklengths[0] = 1;
+    blocklengths[1] = S;
+    oldtypes[0] = MPI_INT;
+    oldtypes[1] = MPI_INT;
+    offsets[0] = 0;
+    offsets[1] = int_length;
+    MPI_Type_struct(2, blocklengths, offsets, oldtypes, &SUBMAT_T_MPI);
+    MPI_Type_commit(&SUBMAT_T_MPI);
 
     //printf("%d ", submatA->S);
 
@@ -218,7 +266,7 @@ int main(int argc, char *argv[]){
 
     Read_matrix(submatA, &grid, N); 
 
-    //Convert(submatA);
+    Convert(submatA);
 
     SetBeqA(submatA, submatB);
 
@@ -226,20 +274,22 @@ int main(int argc, char *argv[]){
     int chosen_root = (grid.my_row + step) % grid.Q;
 
     if (chosen_root == grid.my_col) {
-        MPI_Bcast(submatA, S*S, MPI_INT, chosen_root, grid.row_comm);
-        //special_matrix_mult(S, submatA, submatB, submatC);
-        SetBeqA(submatB, submatA);
+        MPI_Bcast(submatA, 1, SUBMAT_T_MPI, chosen_root, grid.row_comm);
+        special_matrix_mult(submatA, submatB, submatC);
+        //SetBeqA(submatB, submatA);
     } else {
-        MPI_Bcast(temp_submatA, S*S, MPI_INT, chosen_root, grid.row_comm);
-        //special_matrix_mult(S, temp_submatA, submatB, submatC);
-        SetBeqA(submatB, temp_submatA);
+        MPI_Bcast(temp_submatA, 1, SUBMAT_T_MPI, chosen_root, grid.row_comm);
+        special_matrix_mult(temp_submatA, submatB, submatC);
+        //SetBeqA(submatB, temp_submatA);
     }
 
-    Print_matrix("SubmatA\n", submatA, &grid, N);
-    Print_matrix("SubmatB\n", submatB, &grid, N);
+    //Print_matrix("SubmatA\n", submatA, &grid, N);
+    //Print_matrix("SubmatB\n", submatB, &grid, N);
+    Print_matrix("SubmatC\n", submatC, &grid, N);
 
     free(submatA);
     free(submatB);
+    free(submatC);
 
     MPI_Finalize();
 
