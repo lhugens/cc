@@ -62,3 +62,12 @@ district <- district %>% select(-c(no_crimes_95))
 district <- district %>% select(-c(no_crimes_96))
 district <- district %>% select(-c(unemploy_rate_95))
 district <- district %>% select(-c(unemploy_rate_96))
+
+## DATA PER REGION ##
+# get data per region
+district_mean_by_region <- district %>%
+      group_by(region) %>%
+      summarise_all(mean)
+# remove irrelevant attributes: code and name
+district_mean_by_region <- district_mean_by_region %>% select(-c(code))
+district_mean_by_region <- district_mean_by_region %>% select(-c(name))
