@@ -11,7 +11,6 @@ summary(district)
 district <- district %>% select(-c(`no. of municipalities with inhabitants < 499`, `no. of municipalities with inhabitants 500-1999`, `no. of municipalities with inhabitants 2000-9999`, `no. of municipalities with inhabitants >10000`))
 # remove no. of cities
 district <- district %>% select(-c(`no. of cities`))
-
 # rename several attribute
 district <- district %>% rename(no_inhabitants = 'no. of inhabitants')
 district <- district %>% rename(ratio_urban_inhabitants=`ratio of urban inhabitants`)
@@ -27,12 +26,13 @@ district <- district %>% rename(no_enterpre_per_1000=`no. of enterpreneurs per 1
 district <- district %>% mutate(no_crimes_95 = as.numeric(no_crimes_95))
 district <- district %>% mutate(unemploy_rate_95 = as.numeric(unemploy_rate_95))
 district <- district %>% mutate(unemploy_rate_96 = as.numeric(unemploy_rate_96))
+
+## DEALT WITH MISSING VALUES ##
 # are there any missing values "NA"
 district %>% filter(is.na(no_crimes_95))
 # missing value if Jesenik, of region North Moravia
 # discover the mean no_crimes_95 per region
-mean_crimes_per_region_95 <- 
-  district %>%
+mean_crimes_per_region_95 <- district %>%
   group_by(region) %>%
   summarize(no_crimes_95.mean = mean(no_crimes_95, na.rm = TRUE)) %>%
   arrange(no_crimes_95.mean)
@@ -41,5 +41,24 @@ mean_crimes_per_region_95 <-
 district <- district %>%
   group_by(region) %>%
   mutate(no_crimes_95 = ifelse(is.na(no_crimes_95), mean(no_crimes_95, na.rm = TRUE), no_crimes_95))
-# missing value is correctly amputated
+# missing value is correctly amputated. we how it works, don't need to check for each correction
+district %>% filter(is.na(no_crimes_96))
+# none
+district %>% filter(is.na(unemploy_rate_95))
+# one, entry 69 again. lets imputate with average for that region again
+district <- district %>%
+     group_by(region) %>%
+     mutate(unemploy_rate_95 = ifelse(is.na(unemploy_rate_95), mean(unemploy_rate_95, na.rm = TRUE), unemploy_rate_95))
+# check for 96
+district %>% filter(is.na(unemploy_rate_95))
+# none
 
+## CREATE NEW ATTRIBUTES ##
+# deal with 95 and 96 by keeping the ration of value_96/value_95
+district <- district %>% mutate(no_crimes_change_ratio = no_crimes_96 / no_crimes_95)
+district <- district %>% mutate(unemploy_rate_change_ratio = unemploy_rate_96 / unemploy_rate_95)
+# and remove the 95 and 96 attributes
+district <- district %>% select(-c(no_crimes_95))
+district <- district %>% select(-c(no_crimes_96))
+district <- district %>% select(-c(unemploy_rate_95))
+district <- district %>% select(-c(unemploy_rate_96))
