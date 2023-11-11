@@ -20,13 +20,13 @@ int main(){
     scanf("%d", &C);
     scanf("%d", &N);
 
-    printf("%d ", GEN_PROC_RABBITS);
-    printf("%d ", GEN_PROC_FOXES);
-    printf("%d ", GEN_FOOD_FOXES);
-    printf("%d ", N_GEN);
-    printf("%d ", R);
-    printf("%d ", C);
-    printf("%d\n", N);
+    //printf("%d ", GEN_PROC_RABBITS);
+    //printf("%d ", GEN_PROC_FOXES);
+    //printf("%d ", GEN_FOOD_FOXES);
+    //printf("%d ", N_GEN);
+    //printf("%d ", R);
+    //printf("%d ", C);
+    //printf("%d\n", N);
 
     WORLD = (char*) malloc(R*C*sizeof(char));
 
@@ -34,7 +34,7 @@ int main(){
         for(int j=0; j<C; j++)
             WORLD[i*C+j] = ' ';
 
-    char* name = malloc(6*sizeof(char));
+    char* name = (char *) malloc(6*sizeof(char));
     int x;
     int y;
 
