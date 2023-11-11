@@ -34,7 +34,7 @@ int main(){
         for(int j=0; j<C; j++)
             WORLD[i*C+j] = ' ';
 
-    char* name = malloc(100*sizeof(char));
+    char* name = malloc(6*sizeof(char));
     int x;
     int y;
 
