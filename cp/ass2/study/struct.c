@@ -34,13 +34,12 @@ int main(){
         for(int j=0; j<C; j++)
             WORLD[i*C+j] = ' ';
 
-    char name[6];
+    char* name = malloc(100*sizeof(char));
     int x;
     int y;
 
     for(int n=0; n<N; n++){
         scanf("%s %d %d", name, &x, &y);
-        printf("Input: %s %d %d\n", name, x, y);
         if(strcmp(name, "ROCK") == 0){
             WORLD[x*C+y] = '*';
         } else if(strcmp(name, "RABBIT") == 0){
