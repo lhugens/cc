@@ -46,9 +46,18 @@ mean_crimes_95_per_1000_per_region <- district %>%
     summarize(no_crimes_95_per_1000.mean = mean(no_crimes_95_per_1000, na.rm = TRUE)) %>%
     arrange(no_crimes_95_per_1000.mean)
 # value to imputate is 41:
-district <- district %>%
-  group_by(region) %>%
-  mutate(no_crimes_95_per_1000 = ifelse(is.na(no_crimes_95_per_1000), mean(no_crimes_95_per_1000, na.rm = TRUE), no_crimes_95_per_1000))
+# define a function, we will need it for future imputations
+imputate_mean_region <- function(data, attribute_name) {
+  result <- data %>%
+    group_by(region) %>%
+    mutate({{ attribute_name }} := ifelse(is.na({{ attribute_name }}), mean({{ attribute_name }}, na.rm = TRUE), {{ attribute_name }}))
+  
+  return(result)
+}
+district <- imput_mean_region(district, no_crimes_95_per_1000)
+# district <- district %>%
+#   group_by(region) %>%
+#   mutate(no_crimes_95_per_1000 = ifelse(is.na(no_crimes_95_per_1000), mean(no_crimes_95_per_1000, na.rm = TRUE), no_crimes_95_per_1000))
 # one, entry 69 again. lets imputate with average for that region again
 district <- district %>% select(-c(no_crimes_95))
 district <- district %>% select(-c(no_crimes_96))
@@ -89,20 +98,6 @@ district_mean_by_region <- district_mean_by_region %>% select(-c(name))
 # birth_number for women in in format YYMM+50DD, do:
 # generate a new attribute, gender, based on the birth_number formatt, and decrease 50 when the MM is >50, to obtain tue birth date 
 # generate a new attribute, age, based on the exact birth date
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
