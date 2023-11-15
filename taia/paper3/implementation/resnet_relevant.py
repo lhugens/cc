@@ -19,6 +19,7 @@ def residual_block_v1(x, filters, kernel_size=3, stride=1, conv_shortcut=True, n
     else:
         bn_axis = 1
 
+    # here, strid=2
     if conv_shortcut:
         shortcut = layers.Conv2D(4 * filters, 1, strides=stride, name=name + "_0_conv")(x)
         shortcut = layers.BatchNormalization(axis=bn_axis, epsilon=1.001e-5, name=name + "_0_bn")(shortcut)
@@ -55,7 +56,13 @@ def stack_residual_blocks_v1(x, filters, blocks, stride1=2, name=None):
         Output tensor for the stacked blocks.
     """
 
-    x = residual_block_v1(x, filters, stride=stride1, name=name + "_block1")
+    x = residual_block_v1(x, filters, stride=2, name=name + "_block1")
     for i in range(2, blocks + 1):
         x = residual_block_v1(x, filters, conv_shortcut=False, name=name + "_block" + str(i))
     return x
+
+
+
+
+
+

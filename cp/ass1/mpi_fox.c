@@ -79,7 +79,6 @@ int main(int argc, char *argv[]){
     int* submatB;
     int* submatC;
     int* submatACC;
-    int* submatGATHER;
 
     MPI_Status status;
 
@@ -110,7 +109,6 @@ int main(int argc, char *argv[]){
     submatB = (int*) malloc(S * S * sizeof(int));
     submatC = (int*) malloc(S * S * sizeof(int));
     submatACC = (int*) malloc(S * S * sizeof(int));
-    submatGATHER = (int*) malloc(S * S * sizeof(int));
 
     if(my_rank == ROOT){
         for (int i = 0; i < N; i++){
@@ -233,17 +231,14 @@ int main(int argc, char *argv[]){
             for(int j=0; j<S; j++)
                 mat[i * N + j] = submatACC[i * S + j];
         for(int proc=1; proc<P; proc++){
-            MPI_Recv(submatGATHER, S*S, MPI_INT, proc, TAG, MPI_COMM_WORLD, &status);
-            //printf("Recv from proc %d, submatACC\n", proc);
-            //print(S, submatGATHER);
-            //printf("\n");
+            MPI_Recv(submatACC, S*S, MPI_INT, proc, TAG, MPI_COMM_WORLD, &status);
 
             MPI_Cart_coords(grid_comm, proc, 2, coordinates);
             i_init = coordinates[0]*S;
             j_init = coordinates[1]*S;
             for(int i=0; i<S; i++)
                 for(int j=0; j<S; j++)
-                    mat[(i_init + i) * N + (j_init + j)] = submatGATHER[i * S + j];
+                    mat[(i_init + i) * N + (j_init + j)] = submatACC[i * S + j];
         }
         print(N, mat);
     }
