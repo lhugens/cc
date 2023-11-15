@@ -160,6 +160,11 @@ struct Ecosystem {
                         //printf("F @ (%d, %d), ate R @ (%d, %d)\n", i, j, coords[0], coords[1]);
                         //print_new_world();
                         //printf("\n");
+                    } else if (FOOD[i*C+j]>GEN_FOOD_FOXES){
+                        printf("F @ (%d, %d) died of hunger %c>%d\n", i, j, FOOD[i*C+j], GEN_FOOD_FOXES);
+                        NEW_WORLD[i*C+j] = '_';
+                        PROC[i*C+j] = '_';
+                        FOOD[i*C+j] = '_';
                     } else if (select_adjacent_cell(i, j, '_', coords)){
                         NEW_WORLD[i*C+j] = '_';
                         NEW_WORLD[coords[0]*C+coords[1]] = 'F';
