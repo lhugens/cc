@@ -130,6 +130,8 @@ struct Ecosystem {
                         NEW_WORLD[coords[0]*C+coords[1]] = 'R';
                         PROC[coords[0]*C+coords[1]] = PROC[i*C+j];
                         PROC[i*C+j] = '_';
+                        FOOD[coords[0]*C+coords[1]] = FOOD[i*C+j];
+                        FOOD[i*C+j] = '_';
                         if(PROC[coords[0]*C+coords[1]] - '0' == GEN_PROC_RABBITS+1){
                             printf("R moved to (%d, %d), and left R @ (%d, %d)\n", coords[0], coords[1], i, j);
                             NEW_WORLD[i*C+j] = 'R';
