@@ -9,6 +9,13 @@ char min(char a, char b){
     return b;
 }
 
+char max(char a, char b){
+    if(a - '0' > b - '0'){
+        return a;
+    }
+    return b;
+}
+
 struct Ecosystem {
     int GEN_PROC_RABBITS;
     int GEN_PROC_FOXES;
@@ -166,6 +173,28 @@ struct Ecosystem {
                             PROC[coords[0]*C+coords[1]] = '0';
                             FOOD[i*C+j] = 'R';
                         }
+                        if(NEW_WORLD[coords[0]*C+coords[1]] == 'R'){
+                            //printf("R @ (%d, %d), PROC %c, found R @ (%d, %d)\n", i, j, PROC[i*C+j], coords[0], coords[1]);
+                            NEW_WORLD[i*C+j] = '_';
+                            PROC[coords[0]*C+coords[1]] = max(PROC[coords[0]*C+coords[1]], PROC[i*C+j]);
+                            PROC[i*C+j] = '_';
+                            FOOD[coords[0]*C+coords[1]] = FOOD[i*C+j];
+                            FOOD[i*C+j] = '_';
+                            //printf("F @ (%d, %d), move to (%d, %d)\n", i, j, coords[0], coords[1]);
+                            //print_new_world();
+                            //printf("\n");
+                        } else {
+                            //printf("F @ (%d, %d), FOOD %c, not fond F @ (%d, %d)\n", i, j, FOOD[i*C+j], coords[0], coords[1]);
+                            NEW_WORLD[i*C+j] = '_';
+                            NEW_WORLD[coords[0]*C+coords[1]] = 'F';
+                            PROC[coords[0]*C+coords[1]] = PROC[i*C+j];
+                            PROC[i*C+j] = '_';
+                            FOOD[coords[0]*C+coords[1]] = FOOD[i*C+j];
+                            FOOD[i*C+j] = '_';
+                            //printf("F @ (%d, %d), move to (%d, %d)\n", i, j, coords[0], coords[1]);
+                            //print_new_world();
+                            //printf("\n");
+                        }
                         //printf("R @ (%d, %d), move to (%d, %d)\n", i, j, coords[0], coords[1]);
                         //print_new_world();
                         //printf("\n");
@@ -181,14 +210,16 @@ struct Ecosystem {
         coords = (int*) malloc(2*sizeof(int));
         coords[0] = -1;
         coords[1] = -1;
-        bool selected_rabbit = false;
-        bool selected_empty = false;
+        bool selected_rabbit;
+        bool selected_empty;
         bool died;
         for(int i=0; i<R; i++){
             for(int j=0; j<C; j++){
                 //printf("%c @ (%d, %d), coords=(%d, %d)\n", WORLD[i*C+j], i, j, coords[0], coords[1]);
                 if(WORLD[i*C+j] == 'F' && (i!=coords[0] || j!=coords[1])){
                     died = false;
+                    selected_rabbit = false;
+                    selected_empty = false;
                     PROC[i*C+j]++;
                     FOOD[i*C+j]++;
                     if ((selected_rabbit = select_adjacent_cell(i, j, 'R', coords))){
@@ -210,7 +241,7 @@ struct Ecosystem {
                         FOOD[i*C+j] = '_';
                     } else if ((selected_empty = select_adjacent_cell(i, j, '_', coords))){
                         if(NEW_WORLD[coords[0]*C+coords[1]] == 'F'){
-                            printf("F @ (%d, %d), FOOD %c, fond F @ (%d, %d)\n", i, j, FOOD[i*C+j], coords[0], coords[1]);
+                            //printf("F @ (%d, %d), FOOD %c, fond F @ (%d, %d)\n", i, j, FOOD[i*C+j], coords[0], coords[1]);
                             NEW_WORLD[i*C+j] = '_';
                             PROC[coords[0]*C+coords[1]] = PROC[i*C+j];
                             PROC[i*C+j] = '_';
@@ -220,7 +251,7 @@ struct Ecosystem {
                             //print_new_world();
                             //printf("\n");
                         } else {
-                            printf("F @ (%d, %d), FOOD %c, not fond F @ (%d, %d)\n", i, j, FOOD[i*C+j], coords[0], coords[1]);
+                            //printf("F @ (%d, %d), FOOD %c, not fond F @ (%d, %d)\n", i, j, FOOD[i*C+j], coords[0], coords[1]);
                             NEW_WORLD[i*C+j] = '_';
                             NEW_WORLD[coords[0]*C+coords[1]] = 'F';
                             PROC[coords[0]*C+coords[1]] = PROC[i*C+j];
@@ -313,8 +344,8 @@ int main(){
     //E.print_food();
     printf("\n__________________________\n");
 
-    for(int g=0; g<E.N_GEN; g++){
-    //for(int g=0; g<98; g++){
+    //for(int g=0; g<E.N_GEN; g++){
+    for(int g=0; g<846; g++){
         E.move_rabbits();
         E.update_world();
         E.move_foxes();
@@ -325,5 +356,6 @@ int main(){
         E.print_all();
         printf("\n__________________________\n");
     }
+    printf("GEN_PROC_RABBITS %d\n", E.GEN_PROC_RABBITS);
     return 0;
 }
