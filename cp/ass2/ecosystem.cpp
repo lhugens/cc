@@ -164,7 +164,7 @@ struct Ecosystem {
                     if ((selected = select_adjacent_cell(i, j, '_', coords))){
                         if(NEW_WORLD[coords[0]*C+coords[1]] == 'R'){
                             //printf("NEW_WORLD[%d, %d]=%c\n", coords[0], coords[1], NEW_WORLD[coords[0]*C+coords[1]]);
-                            printf("R @ (%d, %d), PROC %c, found R @ (%d, %d)\n", i, j, PROC[i*C+j], coords[0], coords[1]);
+                            //printf("R @ (%d, %d), PROC %c, found R @ (%d, %d)\n", i, j, PROC[i*C+j], coords[0], coords[1]);
                             NEW_WORLD[i*C+j] = '_';
                             PROC[coords[0]*C+coords[1]] = max(PROC[coords[0]*C+coords[1]], PROC[i*C+j]);
                             PROC[i*C+j] = '_';
@@ -175,7 +175,7 @@ struct Ecosystem {
                             //printf("\n");
                         } else {
                             //printf("selected = %d, NEW_WORLD[%d, %d]=%c\n", selected, coords[0], coords[1], NEW_WORLD[coords[0]*C+coords[1]]);
-                            printf("R @ (%d, %d), PROC %c, not fond R @ (%d, %d)\n", i, j, PROC[i*C+j], coords[0], coords[1]);
+                            //printf("R @ (%d, %d), PROC %c, not fond R @ (%d, %d)\n", i, j, PROC[i*C+j], coords[0], coords[1]);
                             NEW_WORLD[i*C+j] = '_';
                             NEW_WORLD[coords[0]*C+coords[1]] = 'R';
                             PROC[coords[0]*C+coords[1]] = PROC[i*C+j];
@@ -189,7 +189,7 @@ struct Ecosystem {
                         }
                         //if(selected && PROC[coords[0]*C+coords[1]] - '0' == GEN_PROC_RABBITS+1){
                         if(PROC[coords[0]*C+coords[1]] - '0' > GEN_PROC_RABBITS){
-                            printf("R @ (%d, %d), moved to (%d, %d), and left R @ (%d, %d)\n", i, j, coords[0], coords[1], i, j);
+                            //printf("R @ (%d, %d), moved to (%d, %d), and left R @ (%d, %d)\n", i, j, coords[0], coords[1], i, j);
                             NEW_WORLD[i*C+j] = 'R';
                             PROC[i*C+j] = '0';
                             PROC[coords[0]*C+coords[1]] = '0';
