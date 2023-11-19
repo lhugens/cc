@@ -1,9 +1,6 @@
-#include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <cstring>
-
-#define NTHREADS 4
 
 char min(char a, char b){
     if(a - '0' < b - '0'){
@@ -330,29 +327,15 @@ struct Ecosystem {
     }
 
     void update_world(){
-        int tid;
-        #pragma omp parallel num_threads(NTHREADS) default(none) private(tid)
-        {
-            //#pragma single nowait
-            //printf("R=%d, C=%d\n", R, C);
-
-            ////////////////tid = omp_get_thread_num();
-            #pragma omp for
-            for(int i=0; i<R; i++){
-                //printf("T%d, updating row%d\n", tid, i);
-                for(int j=0; j<C; j++){
-                    WORLD[i*C+j] = NEW_WORLD[i*C+j];
-                }
-                //printf("T%d terminated\n", tid);
+        for(int i=0; i<R; i++){
+            for(int j=0; j<C; j++){
+                WORLD[i*C+j] = NEW_WORLD[i*C+j];
             }
         }
-        //printf("FINISHED UPDATE\n\n");
     }
 };
 
 int main(){
-    int n=NTHREADS;
-    int tid;
     Ecosystem E;
     printf("Generation %d\n\n", E.G);
     E.print_all();
@@ -361,8 +344,9 @@ int main(){
     //E.print_food();
     printf("\n__________________________\n");
 
-    for(int g=0; g<1; g++){
-
+    //for(int g=0; g<E.N_GEN; g++){
+    //for(int g=0; g<0; g++){
+    for(int g=0; g<870; g++){
         E.move_rabbits();
         E.update_world();
         E.move_foxes();
@@ -373,6 +357,5 @@ int main(){
         E.print_all();
         printf("\n__________________________\n");
     }
-    
     return 0;
 }
