@@ -143,6 +143,7 @@ void move_rabbits(struct Info *I, struct Object *WORLD, struct Object *NEW_WORLD
                     NEW_WORLD[i*I->C+j].proc = '_';
                     NEW_WORLD[i*I->C+j].food = '_';
                     NEW_WORLD[WORLD[i*I->C+j].x*I->C+WORLD[i*I->C+j].y].name = 'R';
+                    NEW_WORLD[WORLD[i*I->C+j].x*I->C+WORLD[i*I->C+j].y].food = 'R';
                     NEW_WORLD[WORLD[i*I->C+j].x*I->C+WORLD[i*I->C+j].y].moved = 1;
                 }
             }
